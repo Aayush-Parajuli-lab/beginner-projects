@@ -1,55 +1,100 @@
 // TodoWrapper.jsx
-import React, { useState } from 'react';
-import TodoForm from './TodoForm';
-import { v4 as uuidv4 } from 'uuid';
-import EditTodoForm from './EditTodoForm';
-import Todo from './Todo'; // ✅ Added import for Todo component (was missing)
 
-// Main wrapper for Todo app
-export const TodoWrapper = () => {
-  const [todos, setTodos] = useState([]);
+import React, { useState, useEffect } from "react";
+import TodoForm from "./TodoForm";
+import EditTodoForm from "./EditTodoForm";
+import Todo from "./Todo";
+import { v4 as uuidv4 } from "uuid";
 
-  // Add new todo
+const TodoWrapper = () => {
+  // Load todos from localStorage once
+  const [todos, setTodos] = useState(() => {
+    const saved = localStorage.getItem("todos");
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  // Filter state: all | active | completed
+  const [filter, setFilter] = useState("all");
+
+  // Save todos whenever they change
+  useEffect(() => {
+    localStorage.setItem("todos", JSON.stringify(todos));
+  }, [todos]);
+
+  // Add todo
   const addTodo = (todo) => {
-    // ✅ Fixed: include isEditing inside todo object
-    setTodos([...todos, { id: uuidv4(), task: todo, completed: false, isEditing: false }]);
-    console.log(todos);
+    setTodos([
+      ...todos,
+      {
+        id: uuidv4(),
+        task: todo,
+        completed: false,
+        isEditing: false,
+      },
+    ]);
   };
 
-  // Toggle completed status
+  // Toggle completed
   const toggleComplete = (id) => {
-    setTodos(todos.map(todo => todo.id === id ? { ...todo, completed: !todo.completed } : todo));
+    setTodos(
+      todos.map((todo) =>
+        todo.id === id ? { ...todo, completed: !todo.completed } : todo,
+      ),
+    );
   };
 
   // Delete todo
   const deleteTodo = (id) => {
-    setTodos(todos.filter(todo => todo.id !== id));
+    setTodos(todos.filter((todo) => todo.id !== id));
   };
 
-  // Toggle editing mode
+  // Toggle edit mode
   const editTodo = (id) => {
-    setTodos(todos.map(todo => todo.id === id ? { ...todo, isEditing: !todo.isEditing } : todo));
+    setTodos(
+      todos.map((todo) =>
+        todo.id === id ? { ...todo, isEditing: !todo.isEditing } : todo,
+      ),
+    );
   };
 
-  // Update task
+  // Save edited task
   const editTask = (id, newTask) => {
-    // ✅ Fixed: use newTask instead of undefined 'task'
-    setTodos(todos.map(todo => todo.id === id ? { ...todo, task: newTask, isEditing: !todo.isEditing } : todo));
+    setTodos(
+      todos.map((todo) =>
+        todo.id === id ? { ...todo, task: newTask, isEditing: false } : todo,
+      ),
+    );
   };
+
+  /*
+    DERIVED STATE
+    - Based on todos + filter
+    - No mutation
+  */
+  const filteredTodos = todos.filter((todo) => {
+    if (filter === "active") return !todo.completed;
+    if (filter === "completed") return todo.completed;
+    return true; // all
+  });
 
   return (
-    <div className='TodoWrapper'>
+    <div className="TodoWrapper">
       <h1>Todo List</h1>
-      {/* ✅ Fixed prop name to match TodoForm */}
+
       <TodoForm addTodo={addTodo} />
 
-      {todos.map((todo) => (
+      {/* FILTER BUTTONS */}
+      <div style={{ marginBottom: "1rem" }}>
+        <button onClick={() => setFilter("all")}>All</button>
+        <button onClick={() => setFilter("active")}>Active</button>
+        <button onClick={() => setFilter("completed")}>Completed</button>
+      </div>
+
+      {/* RENDER TODOS */}
+      {filteredTodos.map((todo) =>
         todo.isEditing ? (
-          // ✅ Added key to EditTodoForm
           <EditTodoForm key={todo.id} editTodo={editTask} task={todo} />
         ) : (
-          // ✅ Fixed: renamed 'todo' to 'Todo' component to avoid React DOM warning
-          // ✅ Added key using todo.id instead of index (better for React rendering)
           <Todo
             key={todo.id}
             task={todo}
@@ -57,8 +102,8 @@ export const TodoWrapper = () => {
             deleteTodo={deleteTodo}
             editTodo={editTodo}
           />
-        )
-      ))}
+        ),
+      )}
     </div>
   );
 };
