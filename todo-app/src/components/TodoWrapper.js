@@ -1,58 +1,40 @@
 // TodoWrapper.jsx
 
-// React imports
 import React, { useState, useEffect } from "react";
-
-// Component imports
 import TodoForm from "./TodoForm";
 import EditTodoForm from "./EditTodoForm";
 import Todo from "./Todo";
-
-// UUID for unique IDs
 import { v4 as uuidv4 } from "uuid";
 
-// Main wrapper component
 const TodoWrapper = () => {
-  /*
-    STATE INITIALIZATION (IMPORTANT)
-    - We load todos from localStorage if they exist
-    - This function runs ONLY once when component mounts
-  */
+  // Load todos from localStorage once
   const [todos, setTodos] = useState(() => {
-    const savedTodos = localStorage.getItem("todos");
-    return savedTodos ? JSON.parse(savedTodos) : [];
+    const saved = localStorage.getItem("todos");
+    return saved ? JSON.parse(saved) : [];
   });
 
-  /*
-    SIDE EFFECT: SAVE TODOS
-    - Whenever `todos` changes, save it to localStorage
-    - Keeps data persistent after refresh
-  */
+  // Filter state: all | active | completed
+  const [filter, setFilter] = useState("all");
+
+  // Save todos whenever they change
   useEffect(() => {
     localStorage.setItem("todos", JSON.stringify(todos));
   }, [todos]);
 
-  /*
-    ADD TODO
-    - Creates a new todo object
-    - Adds it to the todos array
-  */
+  // Add todo
   const addTodo = (todo) => {
     setTodos([
       ...todos,
       {
-        id: uuidv4(), // unique ID
-        task: todo, // todo text
-        completed: false, // completion status
-        isEditing: false, // edit mode flag
+        id: uuidv4(),
+        task: todo,
+        completed: false,
+        isEditing: false,
       },
     ]);
   };
 
-  /*
-    TOGGLE COMPLETE
-    - Marks todo as completed / not completed
-  */
+  // Toggle completed
   const toggleComplete = (id) => {
     setTodos(
       todos.map((todo) =>
@@ -61,18 +43,12 @@ const TodoWrapper = () => {
     );
   };
 
-  /*
-    DELETE TODO
-    - Removes todo by filtering it out
-  */
+  // Delete todo
   const deleteTodo = (id) => {
     setTodos(todos.filter((todo) => todo.id !== id));
   };
 
-  /*
-    TOGGLE EDIT MODE
-    - Switches between view and edit mode
-  */
+  // Toggle edit mode
   const editTodo = (id) => {
     setTodos(
       todos.map((todo) =>
@@ -81,11 +57,7 @@ const TodoWrapper = () => {
     );
   };
 
-  /*
-    UPDATE TASK
-    - Saves edited text
-    - Turns off edit mode
-  */
+  // Save edited task
   const editTask = (id, newTask) => {
     setTodos(
       todos.map((todo) =>
@@ -94,16 +66,32 @@ const TodoWrapper = () => {
     );
   };
 
-  // UI RENDER
+  /*
+    DERIVED STATE
+    - Based on todos + filter
+    - No mutation
+  */
+  const filteredTodos = todos.filter((todo) => {
+    if (filter === "active") return !todo.completed;
+    if (filter === "completed") return todo.completed;
+    return true; // all
+  });
+
   return (
     <div className="TodoWrapper">
       <h1>Todo List</h1>
 
-      {/* Form to add new todos */}
       <TodoForm addTodo={addTodo} />
 
-      {/* Render todos */}
-      {todos.map((todo) =>
+      {/* FILTER BUTTONS */}
+      <div style={{ marginBottom: "1rem" }}>
+        <button onClick={() => setFilter("all")}>All</button>
+        <button onClick={() => setFilter("active")}>Active</button>
+        <button onClick={() => setFilter("completed")}>Completed</button>
+      </div>
+
+      {/* RENDER TODOS */}
+      {filteredTodos.map((todo) =>
         todo.isEditing ? (
           <EditTodoForm key={todo.id} editTodo={editTask} task={todo} />
         ) : (
