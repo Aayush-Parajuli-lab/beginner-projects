@@ -1,55 +1,112 @@
 // TodoWrapper.jsx
-import React, { useState } from 'react';
-import TodoForm from './TodoForm';
-import { v4 as uuidv4 } from 'uuid';
-import EditTodoForm from './EditTodoForm';
-import Todo from './Todo'; // ✅ Added import for Todo component (was missing)
 
-// Main wrapper for Todo app
-export const TodoWrapper = () => {
-  const [todos, setTodos] = useState([]);
+// React imports
+import React, { useState, useEffect } from "react";
 
-  // Add new todo
+// Component imports
+import TodoForm from "./TodoForm";
+import EditTodoForm from "./EditTodoForm";
+import Todo from "./Todo";
+
+// UUID for unique IDs
+import { v4 as uuidv4 } from "uuid";
+
+// Main wrapper component
+const TodoWrapper = () => {
+  /*
+    STATE INITIALIZATION (IMPORTANT)
+    - We load todos from localStorage if they exist
+    - This function runs ONLY once when component mounts
+  */
+  const [todos, setTodos] = useState(() => {
+    const savedTodos = localStorage.getItem("todos");
+    return savedTodos ? JSON.parse(savedTodos) : [];
+  });
+
+  /*
+    SIDE EFFECT: SAVE TODOS
+    - Whenever `todos` changes, save it to localStorage
+    - Keeps data persistent after refresh
+  */
+  useEffect(() => {
+    localStorage.setItem("todos", JSON.stringify(todos));
+  }, [todos]);
+
+  /*
+    ADD TODO
+    - Creates a new todo object
+    - Adds it to the todos array
+  */
   const addTodo = (todo) => {
-    // ✅ Fixed: include isEditing inside todo object
-    setTodos([...todos, { id: uuidv4(), task: todo, completed: false, isEditing: false }]);
-    console.log(todos);
+    setTodos([
+      ...todos,
+      {
+        id: uuidv4(), // unique ID
+        task: todo, // todo text
+        completed: false, // completion status
+        isEditing: false, // edit mode flag
+      },
+    ]);
   };
 
-  // Toggle completed status
+  /*
+    TOGGLE COMPLETE
+    - Marks todo as completed / not completed
+  */
   const toggleComplete = (id) => {
-    setTodos(todos.map(todo => todo.id === id ? { ...todo, completed: !todo.completed } : todo));
+    setTodos(
+      todos.map((todo) =>
+        todo.id === id ? { ...todo, completed: !todo.completed } : todo,
+      ),
+    );
   };
 
-  // Delete todo
+  /*
+    DELETE TODO
+    - Removes todo by filtering it out
+  */
   const deleteTodo = (id) => {
-    setTodos(todos.filter(todo => todo.id !== id));
+    setTodos(todos.filter((todo) => todo.id !== id));
   };
 
-  // Toggle editing mode
+  /*
+    TOGGLE EDIT MODE
+    - Switches between view and edit mode
+  */
   const editTodo = (id) => {
-    setTodos(todos.map(todo => todo.id === id ? { ...todo, isEditing: !todo.isEditing } : todo));
+    setTodos(
+      todos.map((todo) =>
+        todo.id === id ? { ...todo, isEditing: !todo.isEditing } : todo,
+      ),
+    );
   };
 
-  // Update task
+  /*
+    UPDATE TASK
+    - Saves edited text
+    - Turns off edit mode
+  */
   const editTask = (id, newTask) => {
-    // ✅ Fixed: use newTask instead of undefined 'task'
-    setTodos(todos.map(todo => todo.id === id ? { ...todo, task: newTask, isEditing: !todo.isEditing } : todo));
+    setTodos(
+      todos.map((todo) =>
+        todo.id === id ? { ...todo, task: newTask, isEditing: false } : todo,
+      ),
+    );
   };
 
+  // UI RENDER
   return (
-    <div className='TodoWrapper'>
+    <div className="TodoWrapper">
       <h1>Todo List</h1>
-      {/* ✅ Fixed prop name to match TodoForm */}
+
+      {/* Form to add new todos */}
       <TodoForm addTodo={addTodo} />
 
-      {todos.map((todo) => (
+      {/* Render todos */}
+      {todos.map((todo) =>
         todo.isEditing ? (
-          // ✅ Added key to EditTodoForm
           <EditTodoForm key={todo.id} editTodo={editTask} task={todo} />
         ) : (
-          // ✅ Fixed: renamed 'todo' to 'Todo' component to avoid React DOM warning
-          // ✅ Added key using todo.id instead of index (better for React rendering)
           <Todo
             key={todo.id}
             task={todo}
@@ -57,8 +114,8 @@ export const TodoWrapper = () => {
             deleteTodo={deleteTodo}
             editTodo={editTodo}
           />
-        )
-      ))}
+        ),
+      )}
     </div>
   );
 };
